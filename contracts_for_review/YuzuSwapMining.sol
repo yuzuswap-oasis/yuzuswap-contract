@@ -30,6 +30,7 @@ interface IYuzuKeeper {
 contract YuzuSwapMining is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
+    using SafeERC20 for YUZUToken;
     // Info of each user.
     struct UserInfo {
         uint256 amount; // How many LP tokens the user has provided.
@@ -57,7 +58,7 @@ contract YuzuSwapMining is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
     }
 
     // The YUZU TOKEN!
-    YuzuToken public yuzu;
+    YUZUToken public yuzu;
     //The YUZURouter addr
     address public routerAddr;
     address public factoryAddr;
@@ -86,7 +87,7 @@ contract YuzuSwapMining is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
 
 
     constructor(
-        YuzuToken _yuzu,
+        YUZUToken _yuzu,
         IYuzuKeeper _yuzukeeper,
         address payable _routerAddr,
         uint256 _yuzuPerBlock,
@@ -112,13 +113,16 @@ contract YuzuSwapMining is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
     function add(
         uint256 _allocPoint,
         address _archorTokenAddr,
-        address _anotherTokenAddr,
-        bool _withUpdate
+        address _anotherTokenAddr
     ) public onlyOwner {
+        bool _withUpdate = true ;//force to true in case of security risks
         if (_withUpdate) {
             massUpdatePools();
         }
         address _lpToken = UniswapV2Library.pairFor(factoryAddr, _archorTokenAddr, _anotherTokenAddr);
+
+        duplicatedTokenDetect(_lpToken);
+
         uint256 lastRewardBlock =
             block.number > startBlock ? block.number : startBlock;
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
@@ -138,9 +142,9 @@ contract YuzuSwapMining is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
     // Update the given pool's YUZU allocation point. Can only be called by the owner.
     function set(
         uint256 _pid,
-        uint256 _allocPoint,
-        bool _withUpdate
+        uint256 _allocPoint
     ) public onlyOwner {
+        bool _withUpdate = true; //force to true in case of security risks
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -279,9 +283,9 @@ contract YuzuSwapMining is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
     function safeYuzuTransfer(address _to, uint256 _amount) internal {
         uint256 yuzuBal = yuzu.balanceOf(address(this));
         if (_amount > yuzuBal) {
-            yuzu.transfer(_to, yuzuBal);
+            yuzu.safeTransfer(_to, yuzuBal);
         } else {
-            yuzu.transfer(_to, _amount);
+            yuzu.safeTransfer(_to, _amount);
         }
     }
 
@@ -303,6 +307,15 @@ contract YuzuSwapMining is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
         user.rewardDebt = user.amount.mul(pool.accYuzuPerShare).div(1e12);
         emit Withdraw(msg.sender, _pid,_burned, pending);
     }
+
+
+    function duplicatedTokenDetect ( address _lpToken ) internal view{
+        uint256 length = poolInfo.length ;
+        for ( uint256 pid = 0; pid < length ; ++ pid) {
+            require(poolInfo[pid].lpToken != _lpToken , "add: duplicated token");
+        }
+    }
+
 
 
 }

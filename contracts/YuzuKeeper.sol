@@ -20,7 +20,7 @@ contract YuzuKeeper is Ownable {
 
 
     // The Yuzu TOKEN!
-    YuzuToken public yuzu;
+    YUZUToken public yuzu;
     mapping(address => YuzuApplicatioin) public applications;
     bool public appPublished ; //when published ,applications can not be modified
     address public immutable devAddr; //1/4 extra
@@ -41,7 +41,7 @@ contract YuzuKeeper is Ownable {
 
 
     constructor(
-        YuzuToken _yuzu,
+        YUZUToken _yuzu,
         address _devAddr,
         address _investorAddr,
         address _foundationAddr

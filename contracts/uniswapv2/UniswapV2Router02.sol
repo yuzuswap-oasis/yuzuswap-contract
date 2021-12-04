@@ -69,6 +69,10 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
         address to,
         uint deadline
     ) external virtual override ensure(deadline) returns (uint amountA, uint amountB, uint liquidity) {
+        //necessery argument validate
+        require(amountADesired >=  amountAMin,"UniswapV2Router: AMOUNTAMIN_GREATER_THEN_AMOUNTADDESIRED");
+        require(amountBDesired >=  amountBMin,"UniswapV2Router: AMOUNTBMIN_GREATER_THEN_BMOUNTADDESIRED");
+
         (amountA, amountB) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin);
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
         TransferHelper.safeTransferFrom(tokenA, msg.sender, pair, amountA);

@@ -30,6 +30,7 @@ interface IYuzuKeeper {
 contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
+    using SafeERC20 for YUZUToken;
     // Info of each user.
     struct UserInfo {
         uint256 amount; // How many LP tokens the user has provided.
@@ -54,7 +55,7 @@ contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
         uint256 accYuzuPerShare; // Accumulated YUZUs per share, times 1e12. See below.
     }
     // The Yuzu TOKEN!
-    YuzuToken public yuzu;
+    YUZUToken public yuzu;
     // The Yuzu Keeper
     IYuzuKeeper public yuzukeeper;
     // Info of each pool.
@@ -72,7 +73,7 @@ contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
     );
 
     constructor(
-        YuzuToken _yuzu,
+        YUZUToken _yuzu,
         IYuzuKeeper _yuzukeeper,
         uint256 _yuzuPerBlock,
         uint256 _startBlock,
@@ -94,12 +95,14 @@ contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
     // XXX DO NOT add the same LP token more than once. Rewards will be messed up if you do.
     function add(
         uint256 _allocPoint,
-        IERC20 _lpToken,
-        bool _withUpdate
+        IERC20 _lpToken
     ) public onlyOwner {
+        bool _withUpdate = true;//force to true in case of security risks
         if (_withUpdate) {
             massUpdatePools();
         }
+        duplicatedTokenDetect(_lpToken);
+
         uint256 lastRewardBlock =
             block.number > startBlock ? block.number : startBlock;
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
@@ -116,9 +119,9 @@ contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
     // Update the given pool's YUZU allocation point. Can only be called by the owner.
     function set(
         uint256 _pid,
-        uint256 _allocPoint,
-        bool _withUpdate
+        uint256 _allocPoint
     ) public onlyOwner {
+        bool _withUpdate = true;//force to true in case of security risks
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -195,14 +198,19 @@ contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
                 );
             safeYuzuTransfer(msg.sender, pending);
         }
+        //Incompatibility with Deflationary Tokens
+        uint256 lpBalanceBeforeDeposit = pool.lpToken.balanceOf(address(this));
         pool.lpToken.safeTransferFrom(
             address(msg.sender),
             address(this),
             _amount
         );
-        user.amount = user.amount.add(_amount);
+        uint256 lpBalanceAfterDeposit = pool.lpToken.balanceOf(address(this));
+        uint256 realDepositAmount = lpBalanceAfterDeposit.sub(lpBalanceBeforeDeposit);
+
+        user.amount = user.amount.add(realDepositAmount);
         user.rewardDebt = user.amount.mul(pool.accYuzuPerShare).div(1e12);
-        emit Deposit(msg.sender, _pid, _amount);
+        emit Deposit(msg.sender, _pid, realDepositAmount);
     }
 
     // Withdraw LP tokens from MasterChef.
@@ -236,9 +244,18 @@ contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
     function safeYuzuTransfer(address _to, uint256 _amount) internal {
         uint256 yuzuBal = yuzu.balanceOf(address(this));
         if (_amount > yuzuBal) {
-            yuzu.transfer(_to, yuzuBal);
+            yuzu.safeTransfer(_to, yuzuBal);
         } else {
-            yuzu.transfer(_to, _amount);
+            yuzu.safeTransfer(_to, _amount);
         }
     }
+
+
+    function duplicatedTokenDetect ( IERC20 _lpToken ) internal view{
+        uint256 length = poolInfo.length ;
+        for ( uint256 pid = 0; pid < length ; ++ pid) {
+            require(poolInfo[pid].lpToken != _lpToken , "add: duplicated token");
+        }
+    }
+
 }

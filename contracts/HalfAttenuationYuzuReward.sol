@@ -48,6 +48,16 @@ contract HalfAttenuationYuzuReward {
 
 
 
+
+    /* purpose: record the yuzu reward from startblock -> args{to} block
+     * args : 
+     * _startBlock reward started block
+     * _blockNumberOfHalfAttenuationCycle  how many blocks to half the init reward
+     * _yuzuPerBlock per block yuzu at first 
+     * _to: until which block
+     * returns: the amount of yuzu 
+     */ 
+
     function _getYuzuFromStartblock(uint256 _startBlock,uint256 _blockNumberOfHalfAttenuationCycle,uint256 _yuzuPerBlock, uint256 _to)
         internal
         pure

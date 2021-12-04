@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 
 // YuzuToken
-contract YuzuToken is ERC20("YUZUToken", "YUZU"), Ownable {
+contract YUZUToken is ERC20("YUZUToken", "YUZU"), Ownable {
 
   uint256 constant TOTAL_SUPPLAY =  (5*10 ** 8) * (10 ** 18) ;  // 500 milli
 
