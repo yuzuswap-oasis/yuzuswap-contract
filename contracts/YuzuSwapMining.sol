@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-
+pragma solidity 0.6.12;
 
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -74,6 +74,7 @@ contract YuzuSwapMining is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
 
     //Pos start from 1, pos-1 equals pool index 
     mapping(address => uint256) public tokenPairMapPoolPos;
+    mapping(address => bool) public lpTokenRecorder;
 
 
 
@@ -121,7 +122,7 @@ contract YuzuSwapMining is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
         }
         address _lpToken = UniswapV2Library.pairFor(factoryAddr, _archorTokenAddr, _anotherTokenAddr);
 
-        duplicatedTokenDetect(_lpToken);
+        require(!lpTokenRecorder[_lpToken],"Duplicated lpToken detect ");
 
         uint256 lastRewardBlock =
             block.number > startBlock ? block.number : startBlock;
@@ -137,6 +138,7 @@ contract YuzuSwapMining is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
             })
         );
         tokenPairMapPoolPos[_lpToken] =  poolInfo.length;
+        lpTokenRecorder[_lpToken] = true;
     }
 
     // Update the given pool's YUZU allocation point. Can only be called by the owner.
@@ -306,14 +308,6 @@ contract YuzuSwapMining is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
 
         user.rewardDebt = user.amount.mul(pool.accYuzuPerShare).div(1e12);
         emit Withdraw(msg.sender, _pid,_burned, pending);
-    }
-
-
-    function duplicatedTokenDetect ( address _lpToken ) internal view{
-        uint256 length = poolInfo.length ;
-        for ( uint256 pid = 0; pid < length ; ++ pid) {
-            require(poolInfo[pid].lpToken != _lpToken , "add: duplicated token");
-        }
     }
 
 
