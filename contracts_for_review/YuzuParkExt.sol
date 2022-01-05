@@ -266,7 +266,7 @@ contract YuzuParkExt is Ownable ,HalfAttenuationYuzuReward, ReentrancyGuard{
 
         IRewarder[] memory _rewarders  = poolInfo[_pid].rewarders;
         for(uint256 i = 0;i < _rewarders.length ; i ++ ){
-            IRewarder _rewarder = _rewarders[_pid];
+            IRewarder _rewarder = _rewarders[i];
             if(address(_rewarder) != address(0)){
                 _rewarder.onYUZUReward(_pid,msg.sender, user.amount,pending);
             }
