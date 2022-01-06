@@ -26,26 +26,35 @@ interface IYuzuZap {
 
 // File: Zap.sol
 
-contract YuzuZap is Ownable, IYuzuZap {
+contract YuzuZap is Ownable, IYuzuZap ,ReentrancyGuard{
     using SafeMath for uint;
     using SafeERC20 for IERC20;
 
     /* ========== STATE VARIABLES ========== */
 
-    address private WNATIVE;
+    address immutable private WNATIVE;
     mapping(address => mapping(address => address)) private tokenBridgeForRouter;
     mapping(address => bool) public isFeeOnTransfer;
+    mapping(address => bool) public routerWhiteList;
 
 
     constructor(address _WNATIVE) public  {
        WNATIVE = _WNATIVE;
     }
 
+    /* ========== Modifier ============== */
+    modifier inWhilteList(address routerAddress) {
+        require(routerWhiteList[routerAddress],'routerAddress not in whitelist');
+        _;
+    }
+
+    
+
     /* ========== External Functions ========== */
 
     receive() external payable {}
 
-    function zapInToken(address _from, uint amount, address _to, address routerAddr, address _recipient) external override {
+    function zapInToken(address _from, uint amount, address _to, address routerAddr, address _recipient) external override nonReentrant inWhilteList(routerAddr){
         _approveTokenIfNeeded(_from, routerAddr);
 
         if (isFeeOnTransfer[_from]) {
@@ -90,12 +99,12 @@ contract YuzuZap is Ownable, IYuzuZap {
         }
     }
 
-    function zapIn(address _to, address routerAddr, address _recipient) external payable override {
+    function zapIn(address _to, address routerAddr, address _recipient) external payable override nonReentrant inWhilteList(routerAddr){
         // from Native to an LP token through the specified router
         _swapNativeToLP(_to, msg.value, _recipient, routerAddr);
     }
 
-    function zapAcross(address _from, uint amount, address _toRouter, address _recipient) external override {
+    function zapAcross(address _from, uint amount, address _toRouter, address _recipient) external override nonReentrant inWhilteList(_toRouter){
         IERC20(_from).safeTransferFrom(msg.sender, address(this), amount);
 
         IUniswapV2Pair pair = IUniswapV2Pair(_from);
@@ -109,7 +118,7 @@ contract YuzuZap is Ownable, IYuzuZap {
         IUniswapV2Router01(_toRouter).addLiquidity(pair.token0(), pair.token1(), amt0, amt1, 0, 0, _recipient, block.timestamp);
     }
 
-    function zapOut(address _from, uint amount, address routerAddr, address _recipient) external override {
+    function zapOut(address _from, uint amount, address routerAddr, address _recipient) external override nonReentrant inWhilteList(routerAddr){
         // from an LP token to Native through specified router
         // take the LP token
         IERC20(_from).safeTransferFrom(msg.sender, address(this), amount);
@@ -141,7 +150,7 @@ contract YuzuZap is Ownable, IYuzuZap {
         }
     }
 
-    function zapOutToken(address _from, uint amount, address _to, address routerAddr, address _recipient) external override {
+    function zapOutToken(address _from, uint amount, address _to, address routerAddr, address _recipient) external override nonReentrant inWhilteList(routerAddr){
         // from an LP token to an ERC20 through specified router
         IERC20(_from).safeTransferFrom(msg.sender, address(this), amount);
         _approveTokenIfNeeded(_from, routerAddr);
@@ -162,13 +171,13 @@ contract YuzuZap is Ownable, IYuzuZap {
         IERC20(_to).safeTransfer(_recipient, amt0.add(amt1));
     }
 
-    function swapToken(address _from, uint amount, address _to, address routerAddr, address _recipient) external override {
+    function swapToken(address _from, uint amount, address _to, address routerAddr, address _recipient) external override nonReentrant inWhilteList(routerAddr){
         IERC20(_from).safeTransferFrom(msg.sender, address(this), amount);
         _approveTokenIfNeeded(_from, routerAddr);
         _swap(_from, amount, _to, _recipient, routerAddr);
     }
 
-    function swapToNative(address _from, uint amount, address routerAddr, address _recipient) external override {
+    function swapToNative(address _from, uint amount, address routerAddr, address _recipient) external override nonReentrant inWhilteList(routerAddr){
         IERC20(_from).safeTransferFrom(msg.sender, address(this), amount);
         _approveTokenIfNeeded(_from, routerAddr);
         _swapTokenForNative(_from, amount, _recipient, routerAddr);
@@ -445,7 +454,7 @@ contract YuzuZap is Ownable, IYuzuZap {
 
     function withdraw(address token) external onlyOwner {
         if (token == address(0)) {
-            payable(owner()).transfer(address(this).balance);
+            TransferHelper.safeTransferETH(owner(), address(this).balance);
             return;
         }
 
@@ -457,4 +466,9 @@ contract YuzuZap is Ownable, IYuzuZap {
     function setIsFeeOnTransfer(address token) external onlyOwner {
         isFeeOnTransfer[token] = true;
     }
+
+    function setRouterAddressWhiteList(address routerAddr,bool enable) external onlyOwner {
+        routerWhiteList[routerAddr] = enable;
+    }
+
 }

@@ -87,11 +87,17 @@ contract StandardReward is IRewarder,Ownable {
 	/// @param _pid The index of the pool. See `poolInfo`.
 	/// @param _allocPoint New AP of the pool.
 	function setPool(uint256 _pid, uint256 _allocPoint) public onlyOwner {
+		require(_pid < poolIds.length, "Pool not exists");
 		totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
 		poolInfo[_pid].allocPoint = _allocPoint;
 
 		emit PoolSet(_pid, _allocPoint);
 	}
+
+
+	function poolLength() external view returns (uint256) {
+        return poolIds.length;
+    }
 
 	/// @notice Update reward variables of the given pool.
 	/// @param pid The index of the pool. See `poolInfo`.
@@ -104,9 +110,9 @@ contract StandardReward is IRewarder,Ownable {
 
 			if (lpSupply > 0) {
 				uint256 blocks = block.number.sub(pool.lastRewardBlock);
-				uint256 tokenReward = blocks.mul(tokenPerBlock).mul(pool.allocPoint) / totalAllocPoint;
+				uint256 tokenReward = blocks.mul(tokenPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
 				pool.accTokenPerShare = pool.accTokenPerShare.add(
-					(tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply)
+					(tokenReward.mul(ACC_TOKEN_PRECISION).div(lpSupply))
 				);
 			}
 
@@ -149,7 +155,7 @@ contract StandardReward is IRewarder,Ownable {
 		uint256 pending;
 		// if user had deposited
 		if (user.amount > 0) {
-			pending = (user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt);
+			pending = (user.amount.mul(pool.accTokenPerShare).div(ACC_TOKEN_PRECISION)).sub(user.rewardDebt);
 			rewardToken.safeTransfer(_user, pending);
 		}
 
@@ -174,11 +180,11 @@ contract StandardReward is IRewarder,Ownable {
 
 		if (block.number > pool.lastRewardBlock && lpSupply != 0) {
 			uint256 blocks = block.number.sub(pool.lastRewardBlock);
-			uint256 tokenReward = blocks.mul(tokenPerBlock).mul(pool.allocPoint) / totalAllocPoint;
-			accTokenPerShare = accTokenPerShare.add(tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply);
+			uint256 tokenReward = blocks.mul(tokenPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+			accTokenPerShare = accTokenPerShare.add(tokenReward.mul(ACC_TOKEN_PRECISION).div(lpSupply));
 		}
 
 		token = rewardToken;
-		pending = (user.amount.mul(accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt);
+		pending = (user.amount.mul(accTokenPerShare).div(ACC_TOKEN_PRECISION)).sub(user.rewardDebt);
 	}
 }

@@ -10,11 +10,11 @@ contract HalfAttenuationYuzuReward {
     using SafeMath for uint256;
 
     // The block number when YUZU mining starts
-    uint256 public startBlock;
+    uint256 immutable public startBlock;
     // The block number of half cycle
-    uint256 public  blockNumberOfHalfAttenuationCycle;
+    uint256 immutable public  blockNumberOfHalfAttenuationCycle;
       // YUZU tokens created per block.
-    uint256 public yuzuPerBlock;
+    uint256 immutable public yuzuPerBlock;
 
 
      constructor(
@@ -40,7 +40,7 @@ contract HalfAttenuationYuzuReward {
     //for test
     function getYuzuFromStartblock(uint256 _startBlock,uint256 _blockNumberOfHalfAttenuationCycle, uint256 _yuzuPerBlock,uint256 _to)
         public
-        view
+        pure
         returns (uint256)
     {
         return _getYuzuFromStartblock(_startBlock,_blockNumberOfHalfAttenuationCycle,_yuzuPerBlock,_to);

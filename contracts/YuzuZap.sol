@@ -468,7 +468,7 @@ contract YuzuZap is Ownable, IYuzuZap ,ReentrancyGuard{
     }
 
     function setRouterAddressWhiteList(address routerAddr,bool enable) external onlyOwner {
-        routerWhiteList[routerAddr] = true;
+        routerWhiteList[routerAddr] = enable;
     }
 
 }

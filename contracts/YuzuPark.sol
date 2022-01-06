@@ -55,9 +55,9 @@ contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
         uint256 accYuzuPerShare; // Accumulated YUZUs per share, times 1e12. See below.
     }
     // The Yuzu TOKEN!
-    YUZUToken public yuzu;
+    YUZUToken public immutable yuzu;
     // The Yuzu Keeper
-    IYuzuKeeper public yuzukeeper;
+    IYuzuKeeper public immutable yuzukeeper;
     // Info of each pool.
     PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
@@ -108,7 +108,6 @@ contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
         IERC20 _lpToken
     ) external onlyOwner noDuplicatedLpToken(_lpToken){
         massUpdatePools();
-        duplicatedTokenDetect(_lpToken);
 
         uint256 lastRewardBlock =
             block.number > startBlock ? block.number : startBlock;
@@ -253,14 +252,6 @@ contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
             yuzu.safeTransfer(_to, yuzuBal);
         } else {
             yuzu.safeTransfer(_to, _amount);
-        }
-    }
-
-
-    function duplicatedTokenDetect ( IERC20 _lpToken ) internal view{
-        uint256 length = poolInfo.length ;
-        for ( uint256 pid = 0; pid < length ; ++ pid) {
-            require(poolInfo[pid].lpToken != _lpToken , "add: duplicated token");
         }
     }
 

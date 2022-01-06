@@ -55,15 +55,18 @@ contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
         uint256 accYuzuPerShare; // Accumulated YUZUs per share, times 1e12. See below.
     }
     // The Yuzu TOKEN!
-    YUZUToken public yuzu;
+    YUZUToken public immutable yuzu;
     // The Yuzu Keeper
-    IYuzuKeeper public yuzukeeper;
+    IYuzuKeeper public immutable yuzukeeper;
     // Info of each pool.
     PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     // Total allocation poitns. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
+
+    mapping(address => bool) public lpTokenRecorder;
+
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(
@@ -71,6 +74,11 @@ contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
         uint256 indexed pid,
         uint256 amount
     );
+
+    modifier noDuplicatedLpToken(IERC20 lpToken) {
+        require(!lpTokenRecorder[address(lpToken)],"Duplicated lpToken detect " );
+        _;
+    }
 
     constructor(
         YUZUToken _yuzu,
@@ -84,8 +92,10 @@ contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
 
         yuzu = _yuzu;
         yuzukeeper = _yuzukeeper;
-        yuzuPerBlock = _yuzuPerBlock;
     }
+
+ 
+
 
     function poolLength() external view returns (uint256) {
         return poolInfo.length;
@@ -96,12 +106,8 @@ contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
     function add(
         uint256 _allocPoint,
         IERC20 _lpToken
-    ) public onlyOwner {
-        bool _withUpdate = true;//force to true in case of security risks
-        if (_withUpdate) {
-            massUpdatePools();
-        }
-        duplicatedTokenDetect(_lpToken);
+    ) external onlyOwner noDuplicatedLpToken(_lpToken){
+        massUpdatePools();
 
         uint256 lastRewardBlock =
             block.number > startBlock ? block.number : startBlock;
@@ -114,17 +120,16 @@ contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
                 accYuzuPerShare: 0
             })
         );
+        lpTokenRecorder[address(_lpToken)] = true;
     }
 
     // Update the given pool's YUZU allocation point. Can only be called by the owner.
     function set(
         uint256 _pid,
         uint256 _allocPoint
-    ) public onlyOwner {
-        bool _withUpdate = true;//force to true in case of security risks
-        if (_withUpdate) {
-            massUpdatePools();
-        }
+    ) external onlyOwner {
+        require(_pid < poolInfo.length, "Pool not exists");
+        massUpdatePools();
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(
             _allocPoint
         );
@@ -187,7 +192,7 @@ contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
     }
 
     // Deposit LP tokens to YuzuPark for Yuzu allocation.
-    function deposit(uint256 _pid, uint256 _amount) public nonReentrant{
+    function deposit(uint256 _pid, uint256 _amount) external nonReentrant{
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
@@ -214,7 +219,7 @@ contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
     }
 
     // Withdraw LP tokens from MasterChef.
-    function withdraw(uint256 _pid, uint256 _amount) public nonReentrant{
+    function withdraw(uint256 _pid, uint256 _amount) external nonReentrant{
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
@@ -231,7 +236,7 @@ contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
-    function emergencyWithdraw(uint256 _pid) public nonReentrant{
+    function emergencyWithdraw(uint256 _pid) external nonReentrant{
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         pool.lpToken.safeTransfer(address(msg.sender), user.amount);
@@ -247,14 +252,6 @@ contract YuzuPark is Ownable ,HalfAttenuationYuzuReward,ReentrancyGuard{
             yuzu.safeTransfer(_to, yuzuBal);
         } else {
             yuzu.safeTransfer(_to, _amount);
-        }
-    }
-
-
-    function duplicatedTokenDetect ( IERC20 _lpToken ) internal view{
-        uint256 length = poolInfo.length ;
-        for ( uint256 pid = 0; pid < length ; ++ pid) {
-            require(poolInfo[pid].lpToken != _lpToken , "add: duplicated token");
         }
     }
 
