@@ -317,11 +317,24 @@ contract YuzuParkExt is Ownable ,HalfAttenuationYuzuReward, ReentrancyGuard{
     function emergencyWithdraw(uint256 _pid) external nonReentrant{
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        pool.lpToken.safeTransfer(address(msg.sender), user.amount);
-        emit EmergencyWithdraw(msg.sender, _pid, user.amount);
+
+        uint256 amount = user.amount;
         user.amount = 0;
         user.rewardDebt = 0;
+
+        IRewarder[] memory _rewarders  = poolInfo[_pid].rewarders;
+        for(uint256 i = 0;i < _rewarders.length ; i ++ ){
+            IRewarder _rewarder = _rewarders[i];
+            if(address(_rewarder) != address(0)){
+                _rewarder.onYUZUReward(_pid,msg.sender,0,0);
+            }
+        }
+
+        pool.lpToken.safeTransfer(address(msg.sender), amount);
+        emit EmergencyWithdraw(msg.sender, _pid, amount);
+
     }
+
     function getMasterYuzuBetweenBlocks(uint256 _from, uint256 _to) external view returns (uint256 amount ){
         amount = _getMasterYuzuBetweenBlocks(_from,_to);
     }

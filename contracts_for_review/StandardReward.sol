@@ -144,6 +144,12 @@ contract StandardReward is IRewarder,Ownable {
 		emit RewardRateUpdated(oldRate, _tokenPerBlock);
 	}
 
+
+	/// @dev Withdraw the rest of reward for emergency
+	function emergencyWithdraw() external onlyOwner {
+        rewardToken.safeTransfer(address(msg.sender), rewardToken.balanceOf(address(this)));
+    }
+
 	function onYUZUReward(
 		uint256 pid,
 		address _user,
@@ -187,4 +193,5 @@ contract StandardReward is IRewarder,Ownable {
 		token = rewardToken;
 		pending = (user.amount.mul(accTokenPerShare).div(ACC_TOKEN_PRECISION)).sub(user.rewardDebt);
 	}
+
 }
