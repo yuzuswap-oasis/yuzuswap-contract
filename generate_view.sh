@@ -8,3 +8,4 @@ cp contracts/YuzuToken.sol contracts_for_review
 cp contracts/StandardReward.sol contracts_for_review 
 cp contracts/YuzuParkExt.sol contracts_for_review 
 cp contracts/YuzuZap.sol contracts_for_review 
+cp contracts/YuzuBlackHole.sol contracts_for_review 
