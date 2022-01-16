@@ -1,1 +1,33 @@
 # yuzuswap-contract
+
+
+## prepare env
+npm install
+
+## compile code
+npx hardhat compile
+
+
+
+## run test case 
+npx hardhat test
+
+
+
+# Emerald mainnet Contract address
+YUZUToken 0xf02b3e437304892105992512539F769423a515Cb
+
+YUZURouter 0x250d48C5E78f1E85F7AB07FEC61E93ba703aE668
+
+UniswapV2Factory 0x5F50fDC22697591c1D7BfBE8021163Fc73513653
+
+YuzuKeeper 0xA5cf1F669cf85cA8114Af5681F6ece444697d844
+
+YuzuPark 0xB759803Ee7087559EB601a4939c2d5da7668385a
+
+YuzuSwapMining 0xe63BBe4ef29BFFc40Fa6aE337ca2E532C9A30224
+
+YuzuZap 0x85C9065C6b522E71dC8520C35547E158D3013d74
+
+wROSE  0x21C718C22D52d0F3a789b752D4c2fD5908a8A733
+
